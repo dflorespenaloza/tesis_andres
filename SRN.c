@@ -157,11 +157,13 @@ void inicilisar(int *Vertices, int *Tripletas, int TL){
 }
 int configuraciones(int NV, int TL, float LM) {
     struct Canon *BDG[NV-TL];
-    int contador[NV-TL], aceptado[NV-TL], lab[MAXN], ptn[MAXN], orbits[MAXN], Tripletas[20], S[52], Vertices[80], i, k=TL*(TL-1), a, PT=0, TG=2*NV;
+    int contador[NV-TL], aceptado[NV-TL], lab[MAXN], ptn[MAXN], orbits[MAXN], Tripletas[NV], S[52], Vertices[80], i, k=TL*(TL-1), a, PT=0, TG=2*NV;
     graph g[MAXN*MAXM], canon[MAXN*MAXM];
+    float limite=1000000000/(sizeof(struct Canon)+TG*sizeof(graph))*LM;
     struct rusage ru_begin;
     struct rusage ru_end;
     struct timeval tv_elapsed;
+    getrusage(RUSAGE_SELF, &ru_begin);
     nauty_check(WORDSIZE,1,MAXN,NAUTYVERSIONID);
     static DEFAULTOPTIONS_GRAPH(options);
     options.getcanon = TRUE;
@@ -197,17 +199,15 @@ int configuraciones(int NV, int TL, float LM) {
                     if(i==0){
                         ++contador[k/(TL-1)-TL];
                         ++PT;
-                        if (k==NV*(TL-1)-1){
-                            //&& contador[k/(TL-1)-TL]%30048==0) {
+                        if (k==NV*(TL-1)-1 && contador[k/(TL-1)-TL]%1000000==0) {
                             imprimirtripleta(Vertices, NV, TL);
                             getrusage(RUSAGE_SELF, &ru_end);
                             timeval_subtract(&tv_elapsed, &ru_end.ru_utime, &ru_begin.ru_utime);
                             printf("\nN=%i Tiempo %g ms.", contador[NV-TL-1], (tv_elapsed.tv_sec + (tv_elapsed.tv_usec/1000000.0))*1000.0);
-                            printf("\nPT %i", PT);
                         }
                         else
                             ++k;
-                        if (PT>3669962*LM) {
+                        if (PT>limite) {
                             a=0;
                             for (i=1; i<NV-TL; ++i)
                                 if (aceptado[i]==1 && contador[a]<contador[i])
