@@ -159,7 +159,7 @@ int configuraciones(int NV, int TL, float LM) {
     struct Canon *BDG[NV-TL];
     int contador[NV-TL], aceptado[NV-TL], lab[MAXN], ptn[MAXN], orbits[MAXN], Tripletas[NV], S[52], Vertices[80], i, k=TL*(TL-1), a, PT=0, TG=2*NV;
     graph g[MAXN*MAXM], canon[MAXN*MAXM];
-    float limite=1000000000/(sizeof(struct Canon)+TG*sizeof(graph))*LM;
+    float limite=1048576000/(sizeof(struct Canon)+TG*sizeof(graph))*LM;
     struct rusage ru_begin;
     struct rusage ru_end;
     struct timeval tv_elapsed;
