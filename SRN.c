@@ -1,5 +1,4 @@
-#define MAXN 40// numero maximo de vertices
-//#define MAXN 2*Num
+#define MAXN 40// Tamaño maximo de la grafiva
 #include "nauty.h"
 #include "profile_time.h"
 struct nodo{
@@ -7,11 +6,11 @@ struct nodo{
     struct nodo *menores;
     struct nodo *mayores;
 };
-int comparargraficas(graph *C1, graph *C2,int  TamGrafica){
-    //regresa 0 si son igules, 1 si C1 es mayor
-    //que C2 y -1 si C1 es menor que C2.
+int comparargraficas(graph *C1, graph *C2,int  tgrafica){
+    //regresa 0 si son igules, 1 si C1 es mayor que C2
+    //y -1 si C1 es menor que C2.
     size_t k;
-    for (k = 0; k < (size_t)TamGrafica; ++k){
+    for (k = 0; k < (size_t)tgrafica; ++k){
         if (C1[k] < C2[k])
             return 1;
         if (C1[k] > C2[k])
@@ -19,11 +18,11 @@ int comparargraficas(graph *C1, graph *C2,int  TamGrafica){
     }
     return 0;
 }
-int buscargrafica(struct nodo *pi, graph *C, int TamGrafica, struct nodo **padre, int *comparacion){
+int buscargrafica(struct nodo *pi, graph *C, int tgrafica, struct nodo **padre, int *comparacion){
     //0 si la grafica es nueva, 1 si es repetido
     while (pi!=NULL) {
         *padre=pi;
-        *comparacion=comparargraficas(C, pi->C, TamGrafica);
+        *comparacion=comparargraficas(C, pi->C, tgrafica);
         if (*comparacion==0)
             return 1;
         if (*comparacion==1)
@@ -33,20 +32,20 @@ int buscargrafica(struct nodo *pi, graph *C, int TamGrafica, struct nodo **padre
     }
     return 0;
 }
-int Nuevo(struct nodo **raiz, graph *C, int TamGrafica){
+int Nuevo(struct nodo **raiz, graph *C, int tgrafica){
     //Da 0 si se agrego el nodo.
     //Da 1 sino.
     struct nodo *padre;
     int comparacion;
-    if(buscargrafica(*raiz, C, TamGrafica, &padre, &comparacion)==0){
+    if(buscargrafica(*raiz, C, tgrafica, &padre, &comparacion)==0){
         size_t k;
         struct nodo *N= (struct nodo *)malloc(sizeof(struct nodo));
         if (N==NULL)
             return 2;
-        N->C=(graph *)malloc(sizeof(graph)*TamGrafica);
+        N->C=(graph *)malloc(sizeof(graph)*tgrafica);
         N->menores=NULL;
         N->mayores=NULL;
-        for (k = 0; k < (size_t)TamGrafica; ++k)
+        for (k = 0; k < (size_t)tgrafica; ++k)
             (N)->C[k]=C[k];
         if (*raiz==NULL)
             *raiz=N;
@@ -68,96 +67,96 @@ void Borrar(struct nodo *pi){
         free(pi);
     }
 }
-int buscarpar(int *Tripletas, int tam, int a, int b){
+int buscarpar(int *tripletas, int tam, int a, int b){
     int i;
     b=(1<<b);
     b|=(1<<a);
     for (i=0; i<tam; i++)
-        if ((Tripletas[i]&b)==b)
+        if ((tripletas[i]&b)==b)
             return 1;
     return 0;
 }
-void imprimirtripleta(int *Vertices, int NumVertices, int TamLinea){
+void imprimirtripleta(int *vertices, int nvertices, int tlinea){
     int i, j;
     printf("\n");
-    for (i=0; i<NumVertices; i++){
+    for (i=0; i<nvertices; i++){
         printf("(");
-        for (j=0; j<TamLinea-1; j++)
-            printf("%i, ", Vertices[TamLinea*i+j]+1);
-        printf("%i)", Vertices[TamLinea*i+TamLinea-1]+1);
+        for (j=0; j<tlinea-1; j++)
+            printf("%i, ", vertices[tlinea*i+j]+1);
+        printf("%i)", vertices[tlinea*i+tlinea-1]+1);
     }
 }
-int buscarvertice(int *Tripletas, int k, int a, int TamLinea){
+int buscarvertice(int *tripletas, int k, int a, int tlinea){
     int i, contador;
-    for (i=0, contador=0; i<k/(TamLinea-1); i++)
-        if (Tripletas[i]&(1<<a)){
+    for (i=0, contador=0; i<k/(tlinea-1); i++)
+        if (tripletas[i]&(1<<a)){
             contador++;
-            if (contador==TamLinea)
+            if (contador==tlinea)
                 return 1;
         }
     return 0;
 }
-int verificar(int *Tripletas, int *Vertices, int k, int  a, int TamLinea){
+int verificar(int *tripletas, int *vertices, int k, int  a, int tlinea){
     int i;
-    if(buscarvertice(Tripletas, k, a, TamLinea)==1)
+    if(buscarvertice(tripletas, k, a, tlinea)==1)
         return 1;
-    if (k%(TamLinea-1)==0){
-        if (Vertices[(k/(TamLinea-1))*TamLinea-TamLinea]==Vertices[(k/(TamLinea-1))*TamLinea]&&a<Vertices[(k/(TamLinea-1))*TamLinea-TamLinea+1])
+    if (k%(tlinea-1)==0){
+        if (vertices[(k/(tlinea-1))*tlinea-tlinea]==vertices[(k/(tlinea-1))*tlinea]&&a<vertices[(k/(tlinea-1))*tlinea-tlinea+1])
             return 1;
     }
-    for (i=0; i<=k%(TamLinea-1); i++) {
-        if(buscarpar(Tripletas, k/(TamLinea-1), Vertices[(k/(TamLinea-1))*TamLinea+i], a)==1)
+    for (i=0; i<=k%(tlinea-1); i++) {
+        if(buscarpar(tripletas, k/(tlinea-1), vertices[(k/(tlinea-1))*tlinea+i], a)==1)
             return 1;
     }
     return 0;
 }
-void actualizar(int *Tripletas, int *Vertices, int *S, int k, int  a, int TamLinea){
-    if (k%(TamLinea-1)==TamLinea-2) {
+void actualizar(int *tripletas, int *vertices, int *S, int k, int  a, int tlinea){
+    if (k%(tlinea-1)==tlinea-2) {
         int minimo, i;
-        Tripletas[k/(TamLinea-1)]=0;
-        for (i=0; i<TamLinea-1; ++i) {
-            Tripletas[k/(TamLinea-1)]|=(1<<Vertices[(k/(TamLinea-1))*TamLinea+i]);
+        tripletas[k/(tlinea-1)]=0;
+        for (i=0; i<tlinea-1; ++i) {
+            tripletas[k/(tlinea-1)]|=(1<<vertices[(k/(tlinea-1))*tlinea+i]);
         }
-        Tripletas[k/(TamLinea-1)]|=(1<<a);
-        Vertices[(k/(TamLinea-1))*TamLinea+TamLinea-1]=a;
-        minimo=Vertices[(k/(TamLinea-1))*TamLinea];
-        while (buscarvertice(Tripletas, k+1, minimo, TamLinea)==1)
+        tripletas[k/(tlinea-1)]|=(1<<a);
+        vertices[(k/(tlinea-1))*tlinea+tlinea-1]=a;
+        minimo=vertices[(k/(tlinea-1))*tlinea];
+        while (buscarvertice(tripletas, k+1, minimo, tlinea)==1)
             minimo++;
-        Vertices[(k/(TamLinea-1))*TamLinea+TamLinea]=minimo;
-        S[k-TamLinea*(TamLinea-1)+1]=minimo+1;
+        vertices[(k/(tlinea-1))*tlinea+tlinea]=minimo;
+        S[k-tlinea*(tlinea-1)+1]=minimo+1;
     }
     else{
-        Vertices[(k/(TamLinea-1))*TamLinea+k%(TamLinea-1)+1]=a;
-        S[k-TamLinea*(TamLinea-1)+1]=a+1;
+        vertices[(k/(tlinea-1))*tlinea+k%(tlinea-1)+1]=a;
+        S[k-tlinea*(tlinea-1)+1]=a+1;
     }
 }
-void graficar(graph *g, int TamGrafica, int *Vertices, int terminado, int NumVertices, int TamLinea){
+void graficar(graph *g, int tgrafica, int *vertices, int terminado, int nvertices, int tlinea){
     int i, j, k;
-    EMPTYGRAPH(g,1,TamGrafica);
+    EMPTYGRAPH(g,1,tgrafica);
     for (i=0; i<terminado; i++){
-        for (j=0; j<TamLinea-1; ++j)
-            for (k=j+1; k<TamLinea; ++k)
-                ADDONEEDGE(g, Vertices[i*TamLinea+j], Vertices[i*TamLinea+k], 1);
-        for (j=0; j<TamLinea; ++j)
-            ADDONEEDGE(g, Vertices[i*TamLinea+j], NumVertices+i, 1);
+        for (j=0; j<tlinea-1; ++j)
+            for (k=j+1; k<tlinea; ++k)
+                ADDONEEDGE(g, vertices[i*tlinea+j], vertices[i*tlinea+k], 1);
+        for (j=0; j<tlinea; ++j)
+            ADDONEEDGE(g, vertices[i*tlinea+j], nvertices+i, 1);
     }
 }
-void inicilisar(int *TamGrafica, int *S, int *Vertices, int *Tripletas, int TamLinea, int NumVertices){
+void inicilisar(int *tgrafica, int *S, int *vertices, int *tripletas, int tlinea, int nvertices){
     int i, j, k=0;
-    *TamGrafica=2*NumVertices;
-    S[0]=TamLinea;
-    for (i=0; i<TamLinea; ++i) {
-        Tripletas[i]=0;
-        Tripletas[i]|=(1<<0);
-        Vertices[i*TamLinea]=0;
-        for (j=1; j<TamLinea; ++j) {
-            Vertices[i*TamLinea+j]=++k;
-            Tripletas[i]|=(1<<k);
+    *tgrafica=2*nvertices;
+    S[0]=tlinea;
+    for (i=0; i<tlinea; ++i) {
+        tripletas[i]=0;
+        tripletas[i]|=(1<<0);
+        vertices[i*tlinea]=0;
+        for (j=1; j<tlinea; ++j) {
+            vertices[i*tlinea+j]=++k;
+            tripletas[i]|=(1<<k);
         }
     }
-    Vertices[TamLinea*TamLinea]=1;
+    vertices[tlinea*tlinea]=1;
 }
-void obtenerdatos(int *NumVertices, int *TamLinea, float *Limite, int *salto) {
+void obtenerdatos(int *nvertices, int *tlinea, float *Limite, int *salto) {
     do {
         printf("¿Limite de la memoria en Gigabytes?\n");
         scanf("%f", Limite);
@@ -166,16 +165,16 @@ void obtenerdatos(int *NumVertices, int *TamLinea, float *Limite, int *salto) {
     } while (*Limite<=0);
     do{
         printf("¿Cuantos vertices?\n");
-        scanf("%d", NumVertices);
-        if (*NumVertices<=0)
+        scanf("%d", nvertices);
+        if (*nvertices<=0)
             printf("Se necesita un valor positivo\n");
-    } while (*NumVertices<=0);
+    } while (*nvertices<=0);
     do{
         printf("¿Cuantos vertices por linea?\n");
-        scanf("%d", TamLinea);
-        if (*TamLinea<=0)
+        scanf("%d", tlinea);
+        if (*tlinea<=0)
             printf("Se necesita un valor positivo\n");
-    } while (*TamLinea<=0);
+    } while (*tlinea<=0);
     do{
         printf("¿Cada cuantas soluciones se imprime el progreso?\n");
         scanf("%d", salto);
@@ -184,9 +183,10 @@ void obtenerdatos(int *NumVertices, int *TamLinea, float *Limite, int *salto) {
     } while (*salto<=0);
 }
 int main(int argc, const char * argv[]) {
-    struct nodo *corteisomorfismo[17];
-    int contador[17], aceptado[17], lab[MAXN], ptn[MAXN], orbits[MAXN], Tripletas[20], S[52], Vertices[80], NumVertices, TamLinea, i, k, a, UnionArboles, TamGrafica, salto;
+    struct nodo *csni[17];//Contenedor de soluciones no isomorfas
+    int contador[17], aceptado[17], lab[MAXN], ptn[MAXN], orbits[MAXN], tripletas[20], s[52], vertices[80], nvertices, tlinea, i, k, a, tnoisomorfos, tgrafica, salto;
     graph g[MAXN*MAXM], canon[MAXN*MAXM];
+    //lab, optn, orbits, g y canon son nombres tomados del ejemplo en el manual de nauty y tienen el mismo rol
     float Limite;
     char continuar='s';
     for (i=0; i<MAXN; i++)
@@ -201,69 +201,69 @@ int main(int argc, const char * argv[]) {
     statsblk stats;
     while(continuar=='s'){
         getrusage(RUSAGE_SELF, &ru_begin);
-        obtenerdatos(&NumVertices, &TamLinea, &Limite, &salto);
-        UnionArboles=0;
-        k=TamLinea*(TamLinea-1);
-        inicilisar(&TamGrafica, S, Vertices, Tripletas, TamLinea, NumVertices);
-        Limite*=1048576000/(sizeof(struct nodo)+TamGrafica*sizeof(graph))*0.975;
-        for (i=0; i<TamGrafica; i++)
+        obtenerdatos(&nvertices, &tlinea, &Limite, &salto);
+        tnoisomorfos=0;
+        k=tlinea*(tlinea-1);
+        inicilisar(&tgrafica, s, vertices, tripletas, tlinea, nvertices);
+        Limite*=1048576000/(sizeof(struct nodo)+tgrafica*sizeof(graph))*0.975;
+        for (i=0; i<tgrafica; i++)
             lab[i]=i;
-        for (i=0; i<NumVertices-TamLinea; ++i)
-            corteisomorfismo[i]=NULL;
-        ptn[NumVertices-1]=0;
-        ptn[TamGrafica-1]=0;
+        for (i=0; i<nvertices-tlinea; ++i)
+            csni[i]=NULL;
+        ptn[nvertices-1]=0;
+        ptn[tgrafica-1]=0;
         printf("Soluciones:\n");
-        for (i=0; i<NumVertices-TamLinea; i++){
+        for (i=0; i<nvertices-tlinea; i++){
             contador[i]=0;
             aceptado[i]=1;
         }
-        while (k>TamLinea*(TamLinea-1)-1) {
-            while (S[k-TamLinea*(TamLinea-1)]<NumVertices) {
-                a=S[k-TamLinea*(TamLinea-1)];
-                S[k-TamLinea*(TamLinea-1)]++;
-                //printf("\na=%i, k=%i, Vertices[%i]=(%i, %i, %i)\n", a, k, k/2, Vertices[k/2], Vertices[k/2+1], Vertices[k/2+2]);
-                //imprimirtripleta(Vertices);
-                if (verificar(Tripletas, Vertices, k, a, TamLinea)==0) {
-                    actualizar(Tripletas, Vertices, S, k, a, TamLinea);
-                    if (k%(TamLinea-1)==TamLinea-2 && aceptado[k/(TamLinea-1)-TamLinea]==1) {
-                        graficar(g, TamGrafica, Vertices, k/(TamLinea-1)+1, NumVertices, TamLinea);
-                        densenauty(g, lab, ptn, orbits, &options, &stats, 1, TamGrafica, canon);
-                        i=Nuevo(&corteisomorfismo[k/(TamLinea-1)-TamLinea], canon, TamGrafica);
+        while (k>tlinea*(tlinea-1)-1) {
+            while (s[k-tlinea*(tlinea-1)]<nvertices) {
+                a=s[k-tlinea*(tlinea-1)];
+                s[k-tlinea*(tlinea-1)]++;
+                //printf("\na=%i, k=%i, vertices[%i]=(%i, %i, %i)\n", a, k, k/2, vertices[k/2], vertices[k/2+1], vertices[k/2+2]);
+                //imprimirtripleta(vertices);
+                if (verificar(tripletas, vertices, k, a, tlinea)==0) {
+                    actualizar(tripletas, vertices, s, k, a, tlinea);
+                    if (k%(tlinea-1)==tlinea-2 && aceptado[k/(tlinea-1)-tlinea]==1) {
+                        graficar(g, tgrafica, vertices, k/(tlinea-1)+1, nvertices, tlinea);
+                        densenauty(g, lab, ptn, orbits, &options, &stats, 1, tgrafica, canon);
+                        i=Nuevo(&csni[k/(tlinea-1)-tlinea], canon, tgrafica);
                         if(i==0){
-                            ++contador[k/(TamLinea-1)-TamLinea];
-                            ++UnionArboles;
-                            if (k==NumVertices*(TamLinea-1)-1 && contador[k/(TamLinea-1)-TamLinea]%salto==0) {
-                                //imprimirtripleta(Vertices, NumVertices, TamLinea);
+                            ++contador[k/(tlinea-1)-tlinea];
+                            ++tnoisomorfos;
+                            if (k==nvertices*(tlinea-1)-1 && contador[k/(tlinea-1)-tlinea]%salto==0) {
+                                //imprimirtripleta(vertices, nvertices, tlinea);
                                 getrusage(RUSAGE_SELF, &ru_end);
                                 timeval_subtract(&tv_elapsed, &ru_end.ru_utime, &ru_begin.ru_utime);
-                                printf("\n%i soluciones encontradas. Tiempo %g ms.", contador[NumVertices-TamLinea-1], (tv_elapsed.tv_sec + (tv_elapsed.tv_usec/1000000.0))*1000.0);
+                                printf("\n%i soluciones encontradas. Tiempo %g ms.", contador[nvertices-tlinea-1], (tv_elapsed.tv_sec + (tv_elapsed.tv_usec/1000000.0))*1000.0);
                             }
                             else
                                 ++k;
-                            if (UnionArboles>Limite) {
+                            if (tnoisomorfos>Limite) {
                                 a=0;
-                                for (i=1; i<NumVertices-TamLinea; ++i)
+                                for (i=1; i<nvertices-tlinea; ++i)
                                     if (aceptado[i]==1 && contador[a]<contador[i])
                                         a=i;
-                                if(a==NumVertices-TamLinea-1){
+                                if(a==nvertices-tlinea-1){
                                     printf("\nSe necesita mas memoria");
-                                    for (i=0; i<NumVertices-TamLinea; ++i)
-                                        Borrar(corteisomorfismo[i]);
+                                    for (i=0; i<nvertices-tlinea; ++i)
+                                        Borrar(csni[i]);
                                     return 0;
                                 }
                                 else{
                                     aceptado[a]=0;
-                                    Borrar(corteisomorfismo[a]);
-                                    UnionArboles=-contador[a];
-                                    corteisomorfismo[a]=NULL;
+                                    Borrar(csni[a]);
+                                    tnoisomorfos=-contador[a];
+                                    csni[a]=NULL;
                                 }
                             }
                         }
                         else{
                             if (i==2){
                                 printf("\nError: Falta memoria");
-                                for (i=0; i<NumVertices-TamLinea; ++i)
-                                    Borrar(corteisomorfismo[i]);
+                                for (i=0; i<nvertices-tlinea; ++i)
+                                    Borrar(csni[i]);
                                 return 0;
                             }
                         }
@@ -274,15 +274,15 @@ int main(int argc, const char * argv[]) {
             }
             k--;
         }
-        ptn[NumVertices-1]=1;
-        ptn[TamGrafica-1]=1;
-        for (i=0; i<NumVertices-TamLinea; ++i)
-            Borrar(corteisomorfismo[i]);
-        printf("\nTotal: %i", contador[NumVertices-TamLinea-1]);
+        ptn[nvertices-1]=1;
+        ptn[tgrafica-1]=1;
+        for (i=0; i<nvertices-tlinea; ++i)
+            Borrar(csni[i]);
+        printf("\nTotal: %i", contador[nvertices-tlinea-1]);
         getrusage(RUSAGE_SELF, &ru_end);
         timeval_subtract(&tv_elapsed, &ru_end.ru_utime, &ru_begin.ru_utime);
         printf("\nTiempo %g ms.\n", (tv_elapsed.tv_sec + (tv_elapsed.tv_usec/1000000.0))*1000.0);
-        for (i=0; i<NumVertices-TamLinea; ++i){
+        for (i=0; i<nvertices-tlinea; ++i){
             printf("\nPila %i llego al tamaño de %i elementos", i, contador[i]);
             if (aceptado[i]==0)
                 printf(" y se lleno la memoria");
