@@ -1,0 +1,2 @@
+SRN_linux: SRN.c nauty.h nauty_linux.a
+	gcc -O4 -o SRN_linux SRN.c nauty_linux.a
