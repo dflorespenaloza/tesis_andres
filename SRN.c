@@ -141,10 +141,11 @@ void graficar(graph *g, int tgrafica, int *vertices, int terminado, int nvertice
             ADDONEEDGE(g, vertices[i*tlinea+j], nvertices+i, 1);
     }
 }
-void inicilisar(int *tgrafica, int *S, int *vertices, int *tripletas, int tlinea, int nvertices){
+void inicilisar(int *tgrafica, int *tnoisomorfos, int *S, int *vertices, int *tripletas, int tlinea, int nvertices){
     int i, j, k=0;
     *tgrafica=2*nvertices;
     S[0]=tlinea;
+    *tnoisomorfos=0;
     for (i=0; i<tlinea; ++i) {
         tripletas[i]=0;
         tripletas[i]|=(1<<0);
@@ -156,13 +157,13 @@ void inicilisar(int *tgrafica, int *S, int *vertices, int *tripletas, int tlinea
     }
     vertices[tlinea*tlinea]=1;
 }
-void obtenerdatos(int *nvertices, int *tlinea, float *Limite, int *salto) {
+void obtenerdatos(int *nvertices, int *tlinea, float *limite, int *salto) {
     do {
-        printf("¿Limite de la memoria en Gigabytes?\n");
-        scanf("%f", Limite);
-        if (*Limite<=0)
+        printf("¿limite de la memoria en Gigabytes?\n");
+        scanf("%f", limite);
+        if (*limite<=0)
             printf("Se necesita un valor positivo\n");
-    } while (*Limite<=0);
+    } while (*limite<=0);
     do{
         printf("¿Cuantos vertices?\n");
         scanf("%d", nvertices);
@@ -183,11 +184,14 @@ void obtenerdatos(int *nvertices, int *tlinea, float *Limite, int *salto) {
     } while (*salto<=0);
 }
 int main(int argc, const char * argv[]) {
+    /**********************************
+     Fase 1 inicialisacion
+     **********************************/
     struct nodo *csni[17];//Contenedor de soluciones no isomorfas
     int contador[17], aceptado[17], lab[MAXN], ptn[MAXN], orbits[MAXN], tripletas[20], s[52], vertices[80], nvertices, tlinea, i, k, a, tnoisomorfos, tgrafica, salto;
     graph g[MAXN*MAXM], canon[MAXN*MAXM];
     //lab, optn, orbits, g y canon son nombres tomados del ejemplo en el manual de nauty y tienen el mismo rol
-    float Limite;
+    float limite;
     char continuar='s';
     for (i=0; i<MAXN; i++)
         ptn[i]=1;
@@ -201,11 +205,9 @@ int main(int argc, const char * argv[]) {
     statsblk stats;
     while(continuar=='s'){
         getrusage(RUSAGE_SELF, &ru_begin);
-        obtenerdatos(&nvertices, &tlinea, &Limite, &salto);
-        tnoisomorfos=0;
-        k=tlinea*(tlinea-1);
-        inicilisar(&tgrafica, s, vertices, tripletas, tlinea, nvertices);
-        Limite*=1048576000/(sizeof(struct nodo)+tgrafica*sizeof(graph))*0.975;
+        obtenerdatos(&nvertices, &tlinea, &limite, &salto);
+        inicilisar(&tgrafica, &tnoisomorfos, s, vertices, tripletas, tlinea, nvertices);
+        limite*=1048576000/(sizeof(struct nodo)+tgrafica*sizeof(graph))*0.975;
         for (i=0; i<tgrafica; i++)
             lab[i]=i;
         for (i=0; i<nvertices-tlinea; ++i)
@@ -217,6 +219,7 @@ int main(int argc, const char * argv[]) {
             contador[i]=0;
             aceptado[i]=1;
         }
+        k=tlinea*(tlinea-1);
         while (k>tlinea*(tlinea-1)-1) {
             while (s[k-tlinea*(tlinea-1)]<nvertices) {
                 a=s[k-tlinea*(tlinea-1)];
@@ -240,7 +243,7 @@ int main(int argc, const char * argv[]) {
                             }
                             else
                                 ++k;
-                            if (tnoisomorfos>Limite) {
+                            if (tnoisomorfos>limite) {
                                 a=0;
                                 for (i=1; i<nvertices-tlinea; ++i)
                                     if (aceptado[i]==1 && contador[a]<contador[i])
