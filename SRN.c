@@ -8,6 +8,7 @@
 #define INVALIDO 1
 #define AGREGADO 0
 #define LLENO 2
+#define GIGA (1024*1024*1024)
 #include "nauty.h"
 #include "profile_time.h"
 struct nodo{
@@ -161,7 +162,7 @@ int calcularsistema(int nvertices, int tlinea, int salto, float limite) {
     }
     tnoisomorfos=0;//llevara la cuenta de los elementos en total de csni
     //calculo de cuantos elemntos de csni caben en la memoria asignada
-    limite*=1048576000/(sizeof(struct nodo)+2*nvertices*sizeof(graph))*0.975;
+    limite*=GIGA/(sizeof(struct nodo)+2*nvertices*sizeof(graph))*0.975;
     /******************************************************************
      arreglos para usar nauty
      ******************************************************************/
@@ -217,7 +218,7 @@ int calcularsistema(int nvertices, int tlinea, int salto, float limite) {
                         ++tnoisomorfos;
                         if (k==nvertices*(tlinea-1)-1 && contador[k/(tlinea-1)-tlinea]%salto==0) {
                             /******************************************************************
-                             Es una solucion total. Se imprime
+                             Es una solucion total. A imprimirla
                              ******************************************************************/
                             getrusage(RUSAGE_SELF, &ru_end);
                             timeval_subtract(&tv_elapsed, &ru_end.ru_utime, &ru_begin.ru_utime);
@@ -254,6 +255,9 @@ int calcularsistema(int nvertices, int tlinea, int salto, float limite) {
         }
         k--;
     }
+    /***************************************************
+     Fin del backtraking hora de reportar los resultados
+     ***************************************************/
     for (i=0; i<nvertices-tlinea; ++i)
         Borrar(csni[i]);
     printf("\nTotal: %i", contador[nvertices-tlinea-1]);
