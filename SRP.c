@@ -151,7 +151,7 @@ void graficar(graph *g, int tgrafica, int *lineas, int terminado, int nvertices,
                         ADDONEEDGE(g, j, k, 1);
             }
 }
-void paso(int *lineas, int *lab, int *ptn, int *orbits, int nvertices, int tlinea, int paso, struct nodo **arbol, int *contar){
+void llenarlineas(int *lineas, int *lab, int *ptn, int *orbits, int nvertices, int tlinea, int paso, struct nodo **arbol, int *contar){
     int k=1, i, e;
     int linea[tlinea], S[tlinea];
     graph solucion[2*nvertices], canon[2*nvertices];
@@ -192,21 +192,20 @@ void paso(int *lineas, int *lab, int *ptn, int *orbits, int nvertices, int tline
         --k;
     }
 }
-void navegar(struct nodo *P, int *lineas,int *lab, int *ptn, int *orbits, int nvertices, int tlinea, int npaso, struct nodo **arbol, int *contar){
+void alinear(struct nodo *P, struct nodo **soluciones, int *contar){
     if (P!=NULL) {
-        navegar(P->mayores, lineas, lab, ptn, orbits, nvertices, tlinea, npaso, arbol, contar);
-        navegar(P->menores, lineas, lab, ptn, orbits, nvertices, tlinea, npaso, arbol, contar);
-        for (int i=0; i<npaso; ++i)
-            lineas[i]=P->grafica[i];
-        //printf("hola");
-        paso(lineas, lab, ptn, orbits, nvertices, tlinea, npaso, arbol, contar);
+        alinear(P->mayores, soluciones, contar);
+        alinear(P->menores, soluciones, contar);
+        soluciones[*contar]=P;
+
+        ++(*contar);
     }
 }
-//sistema resoluble por pasos
 void SRP(int nvertices, int tlinea){
     int lineas[nvertices], vertices[nvertices*tlinea], lab[2*nvertices], ptn[2*nvertices], orbits[2*nvertices];
-    int i, k, a, contar;
+    int i, k, a, contar1=0, contar2, etapa;
     struct nodo *arbol1=NULL, *arbol2=NULL, *cambio=NULL;
+    struct nodo **soluciones=NULL;
     for (i=0, k=0; i<tlinea; ++i) {
         lineas[i]=0;
         lineas[i]|=(1<<0);
@@ -221,19 +220,26 @@ void SRP(int nvertices, int tlinea){
         ptn[i]=1;
         lab[i]=i;
     }
-    paso(lineas, lab, ptn, orbits, nvertices, tlinea, tlinea, &arbol1, &contar);
-    for (i=tlinea+1; i<nvertices; ++i){
-        contar=0;
-        navegar(arbol1, lineas, lab, ptn, orbits, nvertices, tlinea, i, &arbol2, &contar);
-        printf("%i soluciones en la etapa %i\n", contar, i-tlinea);
+    llenarlineas(lineas, lab, ptn, orbits, nvertices, tlinea, tlinea, &arbol1, &contar1);
+    for (etapa=tlinea+1; etapa<nvertices; ++etapa){
+        soluciones=(struct nodo**)malloc(sizeof(struct nodo*)*contar1);
+        contar1=0;
+        alinear(arbol1, soluciones, &contar1);
+        for (k=0, contar2=0; k<contar1; ++k){
+            for (a=0; a<etapa; ++a)
+                lineas[a]=soluciones[k]->grafica[a];
+            llenarlineas(lineas, lab, ptn, orbits, nvertices, tlinea, etapa, &arbol2, &contar2);
+        }
+        printf("%i soluciones en la etapa %i\n", contar2, etapa-tlinea);
+        contar1=contar2;
         cambio=arbol1;
         arbol1=arbol2;
         arbol2=cambio;
         Borrar(arbol2);
         arbol2=NULL;
+        free(soluciones);
     }
     Borrar(arbol1);
-    Borrar(arbol2);
 }
 int main(int argc, const char * argv[]) {
     float limite;
@@ -241,7 +247,7 @@ int main(int argc, const char * argv[]) {
     char continuar='s';
     while(continuar=='s'){
         /*********************************************
-                    Se obtienen los datos
+         Se obtienen los datos
          *********************************************/
         do {
             printf("¿limite de la memoria en Gigabytes?\n");
@@ -262,7 +268,7 @@ int main(int argc, const char * argv[]) {
                 printf("Solo 3 o 4");
         }while (tlinea!=3 && tlinea!=4);
         /************************************************
-                Se inicia el proceso
+         Se inicia el proceso
          ************************************************/
         SRP(nvertices, tlinea);
         printf("\n¿Desea continuar?\n");
