@@ -112,18 +112,18 @@ void imprimirvertices(int nvertices, int tlinea, int *vertices, int tam){
     }
     printf("\n");
 }
-int buscarpar(int *lineas, int paso, int a, int b){
+int buscarpar(int *lineas, int etapa, int a, int b){
     int i;
     b=(1<<b);
     b|=(1<<a);
-    for (i=0; i<paso; i++)
+    for (i=0; i<etapa; i++)
         if ((lineas[i]&b)==b)
             return ENCONTRADO;
     return NO_ENCONTRADO;
 }
-int buscarvertice(int *lineas, int paso, int vertice, int tlinea){
+int buscarvertice(int *lineas, int etapa, int vertice, int tlinea){
     int i, contador;
-    for (i=0, contador=0; i<paso; i++)
+    for (i=0, contador=0; i<etapa; i++)
         if (lineas[i]&(1<<vertice)){
             contador++;
             if (contador==tlinea)
@@ -151,7 +151,7 @@ void graficar(graph *g, int tgrafica, int *lineas, int terminado, int nvertices,
                         ADDONEEDGE(g, j, k, 1);
             }
 }
-void llenarlineas(int *lineas, int *lab, int *ptn, int *orbits, int nvertices, int tlinea, int paso, struct nodo **arbol, int *contar){
+void llenarlineas(int *lineas, int *lab, int *ptn, int *orbits, int nvertices, int tlinea, int etapa, struct nodo **arbol, int *contar){
     int k=1, i, e;
     int linea[tlinea], S[tlinea];
     graph solucion[2*nvertices], canon[2*nvertices];
@@ -160,8 +160,8 @@ void llenarlineas(int *lineas, int *lab, int *ptn, int *orbits, int nvertices, i
     options.getcanon = TRUE;
     options.defaultptn=FALSE;
     statsblk stats;
-    for (i=0; i<nvertices && (!(lineas[paso-1]&(1<<i))); ++i);
-    while (buscarvertice(lineas, paso, i, tlinea)==ENCONTRADO)
+    for (i=0; i<nvertices && (!(lineas[etapa-1]&(1<<i))); ++i);
+    while (buscarvertice(lineas, etapa, i, tlinea)==ENCONTRADO)
         ++i;
     linea[0]=i;
     S[1]=linea[0]+1;
@@ -170,12 +170,12 @@ void llenarlineas(int *lineas, int *lab, int *ptn, int *orbits, int nvertices, i
             linea[k]=S[k];
             //printf("k=%i v=%i", k, vertice);
             ++S[k];
-            if (validar(lineas, linea, k, linea[k], paso, tlinea)==VALIDO) {
+            if (validar(lineas, linea, k, linea[k], etapa, tlinea)==VALIDO) {
                 if (k==tlinea-1){
-                    lineas[paso]=0;
+                    lineas[etapa]=0;
                     for (i=0; i<tlinea; ++i)
-                        lineas[paso]|=(1<<linea[i]);
-                    graficar(solucion, 2*nvertices, lineas, paso+1, nvertices, tlinea);
+                        lineas[etapa]|=(1<<linea[i]);
+                    graficar(solucion, 2*nvertices, lineas, etapa+2, nvertices, tlinea);
                     densenauty(solucion, lab, ptn, orbits, &options, &stats, 1, 2*nvertices, canon);
                     e=encontrar_o_agregar(arbol, canon, lineas, 2*nvertices);
                     if (e!=ENCONTRADO){
@@ -220,17 +220,23 @@ void SRP(int nvertices, int tlinea){
         ptn[i]=1;
         lab[i]=i;
     }
+    ptn[nvertices-1]=0;
     llenarlineas(lineas, lab, ptn, orbits, nvertices, tlinea, tlinea, &arbol1, &contar1);
     for (etapa=tlinea+1; etapa<nvertices; ++etapa){
         soluciones=(struct nodo**)malloc(sizeof(struct nodo*)*contar1);
         contar1=0;
         alinear(arbol1, soluciones, &contar1);
+        ptn[nvertices+etapa]=0;
         for (k=0, contar2=0; k<contar1; ++k){
             for (a=0; a<etapa; ++a)
                 lineas[a]=soluciones[k]->grafica[a];
             llenarlineas(lineas, lab, ptn, orbits, nvertices, tlinea, etapa, &arbol2, &contar2);
         }
-        printf("%i soluciones en la etapa %i\n", contar2, etapa-tlinea);
+        ptn[nvertices+etapa]=1;
+        if (etapa<nvertices-1)
+            printf("%i soluciones parciales en la etapa %i\n", contar2, etapa-tlinea);
+        else
+            printf("%i soluciones totales.", contar2);
         contar1=contar2;
         cambio=arbol1;
         arbol1=arbol2;
