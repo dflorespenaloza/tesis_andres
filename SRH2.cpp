@@ -43,7 +43,7 @@ int buscarhash(struct nodo *pi,unsigned long hash, struct nodo **padre, int *com
     }
     return NO_ENCONTRADO;
 }
-int encontrar_o_agregar(struct nodo **raiz, unsigned long hash, int *grafica, int tgrafica){
+int encontrar_o_agregar(struct nodo **raiz, unsigned long hash, int *grafica, int tlinea, int tgrafica){
     struct nodo *padre;
     int comparacion;
     if(buscarhash(*raiz, hash, &padre, &comparacion)==NO_ENCONTRADO){
@@ -60,7 +60,7 @@ int encontrar_o_agregar(struct nodo **raiz, unsigned long hash, int *grafica, in
         N->menores=NULL;
         N->mayores=NULL;
         for (k = 0; k < tgrafica; ++k)
-            N->grafica[k]=grafica[k];
+            N->grafica[k]=grafica[k+tlinea];
         if (*raiz==NULL)
             *raiz=N;
         else{
@@ -149,7 +149,7 @@ void graficar(graph *g, int tgrafica, int *lineas, int terminado, int nvertices,
                         ADDONEEDGE(g, j, k, 1);
             }
 }
-void llenarlineas(int *lineas, int *lab, int *ptn, int *orbits, int nvertices, int tlinea, int etapa, struct nodo **arbol, int *contar){
+void llenarlineas(int *lineas, int *lab, int *ptn, int *orbits, int nvertices, int tlinea, int etapa, struct nodo **arbol, int *contar, int salto){
     unsigned long hash;
     int k=1, i, e;
     int linea[tlinea], S[tlinea];
@@ -163,29 +163,27 @@ void llenarlineas(int *lineas, int *lab, int *ptn, int *orbits, int nvertices, i
         ++i;
     linea[0]=i;
     S[1]=linea[0]+1;
-    /***********************************************************
-     Pequeño back traking
-     ***********************************************************/
     while (k>0) {
         while (S[k]<=nvertices-tlinea+k) {
             linea[k]=S[k];
-            //printf("k=%i v=%i", k, vertice);
             ++S[k];
             if (validar(lineas, linea, k, linea[k], etapa, tlinea)==VALIDO) {
                 if (k==tlinea-1){
                     lineas[etapa]=0;
                     for (i=0; i<tlinea; ++i)
                         lineas[etapa]|=(1<<linea[i]);
-                    graficar(solucion, nvertices+etapa+1, lineas, etapa+1, nvertices, tlinea);
-                    densenauty(solucion, lab, ptn, orbits, &options, &stats, 1, nvertices+etapa+1, canon);
-                    hash=obtenerhash(canon, nvertices+etapa+1);
-                    e=encontrar_o_agregar(arbol, hash, lineas, nvertices+etapa+1);
-                    if (e!=ENCONTRADO){
-                        ++*contar;
-                        //imprimirlineas(nvertices, tlinea, lineas, etapa+2);
-                        //printf("hash1 %lu, hash2=%lu\n", obtenerhash(canon, nvertices+etapa+1), hash);
-                        //imprimirlineas(nvertices, tlinea, lineas, paso+1);
+                    if (salto==0){
+                        graficar(solucion, nvertices+etapa+1, lineas, etapa+1, nvertices, tlinea);
+                        densenauty(solucion, lab, ptn, orbits, &options, &stats, 1, nvertices+etapa+1, canon);
+                        hash=obtenerhash(canon, nvertices+etapa+1);
+                        e=encontrar_o_agregar(arbol, hash, lineas, tlinea, nvertices+etapa+1-tlinea);
+                        if (e!=ENCONTRADO){
+                            //imprimirlineas(nvertices, tlinea, lineas, etapa+1);
+                            ++*contar;
+                        }
                     }
+                    else
+                        llenarlineas(lineas, lab, ptn, orbits, nvertices, tlinea, etapa+1, arbol, contar, salto-1);
                 }
                 else{
                     ++k;
@@ -221,20 +219,23 @@ void SRP(int nvertices, int tlinea){
     vertices[tlinea*tlinea]=1;
     for (i=0; i<2*nvertices; i++)
         lab[i]=i;
-    llenarlineas(lineas, lab, ptn, orbits, nvertices, tlinea, tlinea, &arbol1, &contar1);
-    for (etapa=tlinea+1; etapa<nvertices; ++etapa){
+    llenarlineas(lineas, lab, ptn, orbits, nvertices, tlinea, tlinea, &arbol1, &contar1, 0);
+    for (etapa=tlinea+1; etapa<nvertices-2; ++etapa){
         soluciones=(struct nodo**)malloc(sizeof(struct nodo*)*contar1);
         contar1=0;
         alinear(arbol1, soluciones, &contar1);
         for (k=0, contar2=0; k<contar1; ++k){
-            for (a=0; a<etapa; ++a)
-                lineas[a]=soluciones[k]->grafica[a];
-            llenarlineas(lineas, lab, ptn, orbits, nvertices, tlinea, etapa, &arbol2, &contar2);
+            for (a=tlinea; a<etapa; ++a)
+                lineas[a]=soluciones[k]->grafica[a-tlinea];
+            if(etapa<nvertices-3)
+                llenarlineas(lineas, lab, ptn, orbits, nvertices, tlinea, etapa, &arbol2, &contar2, 0);
+            else
+                llenarlineas(lineas, lab, ptn, orbits, nvertices, tlinea, etapa, &arbol2, &contar2, 2);
         }
-        if (etapa<nvertices-1)
+        if (etapa<nvertices-3)
             printf("%i soluciones parciales en la etapa %i\n", contar2, etapa-tlinea);
         else
-            printf("%i soluciones totales.", contar2);
+            printf("%i soluciones totales.\n", contar2);
         contar1=contar2;
         cambio=arbol1;
         arbol1=arbol2;
@@ -246,20 +247,13 @@ void SRP(int nvertices, int tlinea){
     Borrar(arbol1);
 }
 int main(int argc, const char * argv[]) {
-    float limite;
     int nvertices, tlinea;
     char continuar='s';
     nauty_check(WORDSIZE,1,MAXN,NAUTYVERSIONID);
+    struct rusage ru_begin;
+    struct rusage ru_end;
+    struct timeval tv_elapsed;
     while(continuar=='s'){
-        /*********************************************
-         Se obtienen los datos
-         *********************************************/
-        do {
-            printf("¿limite de la memoria en Gigabytes?\n");
-            scanf("%f", &limite);
-            if (limite<=0)
-                printf("Se necesita un valor positivo\n");
-        } while (limite<=0);
         do{
             printf("¿Cuantos vertices?\n");
             scanf("%d", &nvertices);
@@ -272,11 +266,12 @@ int main(int argc, const char * argv[]) {
             if(tlinea!=3 && tlinea!=4)
                 printf("Solo 3 o 4");
         }while (tlinea!=3 && tlinea!=4);
-        /************************************************
-         Se inicia el proceso
-         ************************************************/
+        getrusage(RUSAGE_SELF, &ru_begin);
         SRP(nvertices, tlinea);
-        printf("\n¿Desea continuar?\n");
+        getrusage(RUSAGE_SELF, &ru_end);
+        timeval_subtract(&tv_elapsed, &ru_end.ru_utime, &ru_begin.ru_utime);
+        printf("Proceso terminado tardo %g ms.\n", (tv_elapsed.tv_sec + (tv_elapsed.tv_usec/1000000.0))*1000.0);
+        printf("¿Desea continuar?\n");
         scanf("%s", &continuar);
     }
     return 0;
