@@ -43,7 +43,7 @@ int buscarhash(struct nodo *pi,unsigned long hash, struct nodo **padre, int *com
     }
     return NO_ENCONTRADO;
 }
-int encontrar_o_agregar(struct nodo **raiz, unsigned long hash, int *grafica, int tlinea, int tgrafica){
+int encontrar_o_agregar(struct nodo **raiz, unsigned long hash, int *grafica, int tgrafica){
     struct nodo *padre;
     int comparacion;
     if(buscarhash(*raiz, hash, &padre, &comparacion)==NO_ENCONTRADO){
@@ -60,7 +60,7 @@ int encontrar_o_agregar(struct nodo **raiz, unsigned long hash, int *grafica, in
         N->menores=NULL;
         N->mayores=NULL;
         for (k = 0; k < tgrafica; ++k)
-            N->grafica[k]=grafica[k+tlinea];
+            N->grafica[k]=grafica[k];
         if (*raiz==NULL)
             *raiz=N;
         else{
@@ -176,10 +176,11 @@ void llenarlineas(int *lineas, int *lab, int *ptn, int *orbits, int nvertices, i
                         graficar(solucion, nvertices+etapa+1, lineas, etapa+1, nvertices, tlinea);
                         densenauty(solucion, lab, ptn, orbits, &options, &stats, 1, nvertices+etapa+1, canon);
                         hash=obtenerhash(canon, nvertices+etapa+1);
-                        e=encontrar_o_agregar(arbol, hash, lineas, tlinea, nvertices+etapa+1-tlinea);
+                        e=encontrar_o_agregar(arbol, hash, &lineas[tlinea], etapa+1-tlinea);
                         if (e!=ENCONTRADO){
-                            //imprimirlineas(nvertices, tlinea, lineas, etapa+1);
                             ++*contar;
+                            if (*contar%100000==0)
+                                printf("%i soluciones encontradas en la etapa %i\n", *contar, etapa-tlinea);
                         }
                     }
                     else
