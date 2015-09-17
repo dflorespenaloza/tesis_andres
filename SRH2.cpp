@@ -176,7 +176,10 @@ void llenarlineas(int *lineas, int *lab, int *ptn, int *orbits, int nvertices, i
                         graficar(solucion, nvertices+etapa+1, lineas, etapa+1, nvertices, tlinea);
                         densenauty(solucion, lab, ptn, orbits, &options, &stats, 1, nvertices+etapa+1, canon);
                         hash=obtenerhash(canon, nvertices+etapa+1);
-                        e=encontrar_o_agregar(arbol, hash, &lineas[tlinea], etapa+1-tlinea);
+                        if (etapa<nvertices-3)
+                            e=encontrar_o_agregar(arbol, hash, &lineas[tlinea], etapa+1-tlinea);
+                        else
+                            e=encontrar_o_agregar(arbol, hash, &lineas[tlinea], 0);
                         if (e!=ENCONTRADO){
                             ++*contar;
                             if (*contar%100000==0)
