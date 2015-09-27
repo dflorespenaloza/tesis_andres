@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <functional>
 #include <iostream>
+#include <fstream>
 #include <string>
 using namespace std;
 unsigned long obtenerhash(graph *g, int tam){
@@ -81,21 +82,29 @@ void Borrar(struct nodo *pi){
         free(pi);
     }
 }
-void imprimirlineas(int nvertices, int tlinea, int *lineas, int tam){
+void imprimirlineas(int nvertices, int tlinea, int *lineas, int tam, ofstream *myfile){
     int i, j, nencontrados;
     for (i=0; i<tam; ++i) {
-        printf("(");
+        *myfile<<"(";
         for (j=0, nencontrados=0; j<nvertices && nencontrados<tlinea; ++j){
             if (lineas[i]&(1<<j)){
                 ++nencontrados;
-                printf("%i", j+1);
+                *myfile<<j+1;
                 if (nencontrados<tlinea)
-                    printf(" ");
+                    *myfile<<" ";
             }
         }
-        printf(")");
+        *myfile<<")";
     }
-    printf("\n");
+    *myfile<<"\n";
+}
+void escribir(int id, int nvertices, int tlinea, int *lineas, int tam){
+    ofstream myfile;
+    myfile.open ("solucion"+std::to_string(id)+".txt");
+    myfile<<nvertices<<" "<<tlinea<<" "<<tam<<"\n";
+    for (int i=0; i<tam; ++i)
+        myfile<<lineas[i]<<" ";
+    myfile.close();
 }
 int buscarpar(int *lineas, int etapa, int a, int b){
     int i;
@@ -136,11 +145,15 @@ void graficar(graph *g, int tgrafica, int *lineas, int terminado, int nvertices,
                         ADDONEEDGE(g, j, k, 1);
             }
 }
-void llenarlineas(int *lineas, int *lab, int *ptn, int *orbits, int nvertices, int tlinea, int etapa, struct nodo **arbol, int *contar, optionblk options, statsblk stats, int salto){
+void llenarlineas(int *lineas, int *lab, int *ptn, int *orbits, int nvertices, int tlinea, int etapa, struct nodo **arbol, int *contar, int salto, int escr){
     unsigned long hash;
     int k=1, i, e;
     int linea[tlinea], S[tlinea];
     graph solucion[2*nvertices], canon[2*nvertices];
+    static DEFAULTOPTIONS_GRAPH(options);
+    options.getcanon = TRUE;
+    options.defaultptn=TRUE;
+    statsblk stats;
     for (i=0; i<nvertices && (!(lineas[etapa-1]&(1<<i))); ++i);
     while (buscarvertice(lineas, etapa, i, tlinea)==ENCONTRADO)
         ++i;
@@ -159,19 +172,15 @@ void llenarlineas(int *lineas, int *lab, int *ptn, int *orbits, int nvertices, i
                         graficar(solucion, nvertices+etapa+1, lineas, etapa+1, nvertices, tlinea);
                         densenauty(solucion, lab, ptn, orbits, &options, &stats, 1, nvertices+etapa+1, canon);
                         hash=obtenerhash(canon, nvertices+etapa+1);
-                        if (etapa<nvertices-3)
-                            e=encontrar_o_agregar(arbol, hash, &lineas[tlinea], etapa+1-tlinea);
-                        else
-                            e=encontrar_o_agregar(arbol, hash, &lineas[tlinea], 0);
+                        e=encontrar_o_agregar(arbol, hash, &lineas[tlinea], etapa-tlinea+1);
                         if (e!=ENCONTRADO){
-                            //imprimirlineas(nvertices, tlinea, lineas, etapa+1);
                             ++*contar;
-                            if (*contar%100000==0)
-                                printf("%i soluciones encontradas en la etapa %i\n", *contar, etapa-tlinea);
+                            if (escr==VALIDO)
+                                escribir(*contar, nvertices, tlinea, &lineas[tlinea], etapa-tlinea+1);
                         }
                     }
                     else
-                        llenarlineas(lineas, lab, ptn, orbits, nvertices, tlinea, etapa+1, arbol, contar, options, stats, salto-1);
+                        llenarlineas(lineas, lab, ptn, orbits, nvertices, tlinea, etapa+1, arbol, contar, salto-1, escr);
                 }
                 else{
                     ++k;
@@ -193,12 +202,9 @@ void alinear(struct nodo *P, struct nodo **soluciones, int *contar){
 void SRP(int nvertices, int tlinea){
     int lineas[nvertices], lab[2*nvertices], ptn[2*nvertices], orbits[2*nvertices];
     int i, k, a, contar1=0, contar2, etapa;
-    struct nodo *arbol1=NULL, *arbol2=NULL, *cambio=NULL;
-    struct nodo **soluciones=NULL;
-    DEFAULTOPTIONS_GRAPH(options);
-    options.getcanon = TRUE;
-    options.defaultptn=TRUE;
-    statsblk stats;
+    struct nodo *arbol1=NULL, *arbol2=NULL, *cambio;
+    struct nodo **soluciones;
+    char ejecutar[50];
     for (i=0, k=0; i<tlinea; ++i) {
         lineas[i]=0;
         lineas[i]|=(1<<0);
@@ -207,23 +213,26 @@ void SRP(int nvertices, int tlinea){
     }
     for (i=0; i<2*nvertices; i++)
         lab[i]=i;
-    llenarlineas(lineas, lab, ptn, orbits, nvertices, tlinea, tlinea, &arbol1, &contar1, options, stats, 0);
-    for (etapa=tlinea+1; etapa<nvertices-2; ++etapa){
+    llenarlineas(lineas, lab, ptn, orbits, nvertices, tlinea, tlinea, &arbol1, &contar1, 0, INVALIDO);
+    for (etapa=tlinea+1; etapa<nvertices-4; ++etapa){
         soluciones=(struct nodo**)malloc(sizeof(struct nodo*)*contar1);
         contar1=0;
         alinear(arbol1, soluciones, &contar1);
         for (k=0, contar2=0; k<contar1; ++k){
             for (a=tlinea; a<etapa; ++a)
                 lineas[a]=soluciones[k]->grafica[a-tlinea];
-            if(etapa<nvertices-3)
-                llenarlineas(lineas, lab, ptn, orbits, nvertices, tlinea, etapa, &arbol2, &contar2, options, stats, 0);
+            if (etapa<nvertices-5)
+                llenarlineas(lineas, lab, ptn, orbits, nvertices, tlinea, etapa, &arbol2, &contar2, 0, INVALIDO);
             else
-                llenarlineas(lineas, lab, ptn, orbits, nvertices, tlinea, etapa, &arbol2, &contar2, options, stats, 2);
+                llenarlineas(lineas, lab, ptn, orbits, nvertices, tlinea, etapa, &arbol2, &contar2, 0, VALIDO);
         }
-        if (etapa<nvertices-3)
+        if (etapa<nvertices-5){
             printf("%i soluciones parciales en la etapa %i\n", contar2, etapa-tlinea);
-        else
+        }
+        else{
             printf("%i soluciones totales.\n", contar2);
+            //myfile<<contar2<<" soluciones totales.\n";
+        }
         contar1=contar2;
         cambio=arbol1;
         arbol1=arbol2;
@@ -232,6 +241,8 @@ void SRP(int nvertices, int tlinea){
         arbol2=NULL;
         free(soluciones);
     }
+    sprintf(ejecutar, "./ciclosolucion.sh %i", contar1);
+    system(ejecutar);
     Borrar(arbol1);
 }
 int main(int argc, const char * argv[]) {
